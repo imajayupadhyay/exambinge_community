@@ -65,6 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Tweets
     Route::get('/tweets', [TweetController::class, 'index'])->name('tweets.index');
     Route::post('/tweets', [TweetController::class, 'store'])->name('tweets.store');
+    Route::post('/tweets/{tweet}/like', [TweetController::class, 'like'])->name('tweets.like');
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

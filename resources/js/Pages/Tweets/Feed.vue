@@ -3,7 +3,7 @@
     <div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-12 gap-6">
 
       <!-- LEFT SIDEBAR -->
-      <aside class="md:col-span-3 hidden md:block">
+      <aside class="md:col-span-3 hidden md:block animate-fade-in-left">
         <div class="bg-white rounded-xl shadow p-4">
           <h3 class="text-lg font-semibold mb-4">Your Exam Preferences</h3>
           <ul class="space-y-2">
@@ -21,7 +21,7 @@
       <!-- MAIN FEED -->
       <main class="md:col-span-6 col-span-12">
         <!-- TWEET FORM -->
-        <form @submit.prevent="submitTweet" class="mb-8 p-6 bg-white border rounded-xl shadow">
+        <form @submit.prevent="submitTweet" class="mb-8 p-6 bg-white border rounded-xl shadow animate-fade-in-up">
           <h2 class="text-xl font-semibold text-gray-800 mb-3">What's on your mind?</h2>
           <textarea
             v-model="form.content"
@@ -57,7 +57,7 @@
         <div
           v-for="tweet in tweets"
           :key="tweet.id"
-          class="bg-white rounded-xl shadow p-4 mb-6"
+          class="bg-white rounded-xl shadow p-4 mb-6 animate-fade-in"
         >
           <div class="flex items-center mb-2">
             <img
@@ -65,11 +65,11 @@
               class="w-10 h-10 rounded-full border mr-3"
             />
             <div>
-              <div class="font-semibold text-gray-800">
+              <div class="font-semibold text-gray-800 flex items-center gap-2">
                 {{ tweet.user.name }}
                 <span
                   v-if="tweet.user.role === 'teacher'"
-                  class="ml-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full"
+                  class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full"
                 >
                   🎓 Teacher
                 </span>
@@ -89,11 +89,23 @@
               #{{ tag }}
             </span>
           </div>
+
+          <!-- LIKE BUTTON -->
+          <div class="mt-3 flex items-center gap-2 text-sm text-gray-600">
+            <button
+              @click.prevent="likeTweet(tweet.id)"
+              class="flex items-center space-x-1 hover:text-orange-500 transition"
+            >
+              <span v-if="tweet.is_liked">❤️</span>
+              <span v-else>🤍</span>
+              <span>{{ tweet.likes_count }}</span>
+            </button>
+          </div>
         </div>
       </main>
 
       <!-- RIGHT SIDEBAR -->
-      <aside class="md:col-span-3 hidden md:block">
+      <aside class="md:col-span-3 hidden md:block animate-fade-in-right">
         <div class="bg-white rounded-xl shadow p-4 mb-6">
           <h3 class="text-lg font-semibold mb-3">Search</h3>
           <input
@@ -116,7 +128,7 @@
 
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, router } from '@inertiajs/vue3'
 import Multiselect from 'vue-multiselect'
 import { defineProps } from 'vue'
 
@@ -139,9 +151,29 @@ const submitTweet = () => {
     onSuccess: () => form.reset(),
   })
 }
+
+const likeTweet = (tweetId) => {
+  router.post(route('tweets.like', tweetId))
+}
 </script>
 
 <style src="vue-multiselect/dist/vue-multiselect.css"></style>
 
 <style scoped>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+.animate-fade-in-up {
+  animation: fade-in 0.5s ease-out;
+}
+.animate-fade-in-left {
+  animation: fade-in 0.5s ease-out;
+}
+.animate-fade-in-right {
+  animation: fade-in 0.5s ease-out;
+}
 </style>
