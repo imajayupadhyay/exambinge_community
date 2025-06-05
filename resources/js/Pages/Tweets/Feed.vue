@@ -165,13 +165,13 @@ import Multiselect from 'vue-multiselect'
 import { defineProps, ref } from 'vue'
 import axios from 'axios'
 
-
 const props = defineProps({
   tweets: Array,
   examTags: Array,
   auth: Object,
 })
 
+const tweets = ref(JSON.parse(JSON.stringify(props.tweets))) // Make reactive
 const preferences = props.auth.user.preferences?.split(',') || []
 const defaultAvatar = 'https://ui-avatars.com/api/?name=EB+User&background=f97316&color=fff'
 
@@ -185,12 +185,17 @@ const replyContent = ref('')
 
 const submitTweet = () => {
   form.post(route('tweets.store'), {
-    onSuccess: () => form.reset(),
+    onSuccess: () => {
+      form.reset()
+      // Optional: Refresh feed or notify
+    }
   })
 }
 
 const likeTweet = (tweetId) => {
-  router.post(route('tweets.like', tweetId))
+  router.post(route('tweets.like', tweetId), {
+    preserveScroll: true
+  })
 }
 
 const toggleReply = (tweetId) => {
@@ -199,25 +204,31 @@ const toggleReply = (tweetId) => {
 }
 
 const submitReply = (tweetId) => {
- axios.post(route('tweets.reply', tweetId), {
-  content: replyContent.value,
-})
-.then(response => {
-  replyContent.value = ''
-  replyingTo.value = null
-  // Optional: Add the new reply to UI without refresh
-  // tweet.replies.push(response.data.reply)
-})
-.catch(error => {
-  console.error(error)
-
+  axios.post(route('tweets.reply', tweetId), {
+    content: replyContent.value,
+  })
+  .then(response => {
+    const reply = response.data.reply
+    const tweet = tweets.value.find(t => t.id === tweetId)
+    if (tweet) {
+      tweet.replies = tweet.replies || []
+      tweet.replies.push(reply)
+    }
+    replyContent.value = ''
+    replyingTo.value = null
+  })
+  .catch(error => {
+    console.error('Reply failed:', error)
   })
 }
 
 const retweet = (tweetId) => {
-  router.post(route('tweets.retweet', tweetId))
+  router.post(route('tweets.retweet', tweetId), {
+    preserveScroll: true
+  })
 }
 </script>
+
 
 <style src="vue-multiselect/dist/vue-multiselect.css"></style>
 

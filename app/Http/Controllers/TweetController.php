@@ -119,7 +119,9 @@ class TweetController extends Controller
         'content' => $request->content,
     ]);
 
-    return response()->json(['message' => 'Reply posted', 'reply' => $reply], 200);
+    $reply->load('user'); // load user for immediate Vue UI display
+
+    return response()->json(['reply' => $reply]);
 }
 
 
