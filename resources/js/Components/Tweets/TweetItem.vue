@@ -83,6 +83,7 @@
 </template>
 
 <script setup>
+
 import { ref, watch } from 'vue'
 import axios from 'axios'
 
@@ -133,15 +134,20 @@ const submitReply = () => {
   })
 }
 
-const retweet = (tweetId) => {
-  axios.post(route('tweets.retweet', tweetId))
-    .then(() => {
-      // You could also fetch updated retweet count here if needed
-    })
-    .catch(error => {
-      console.error('Retweet failed:', error)
-    })
+const retweet = async (tweetId) => {
+  try {
+    const response = await axios.post(route('tweets.retweet', tweetId))
+    const newTweet = response.data.retweeted_tweet
+
+    // Emit new retweet tweet to parent
+    emit('add-retweet', newTweet)
+  } catch (error) {
+    console.error('Retweet failed:', error)
+  }
 }
+
+
+
 </script>
 
 

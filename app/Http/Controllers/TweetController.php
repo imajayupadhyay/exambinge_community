@@ -159,17 +159,51 @@ class TweetController extends Controller
      * Retweet functionality
      */
     public function retweet(Request $request, Tweet $tweet)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        $alreadyRetweeted = $tweet->retweets()->where('user_id', $user->id)->exists();
+    $alreadyRetweeted = $tweet->retweets()->where('user_id', $user->id)->exists();
 
-        if (!$alreadyRetweeted) {
-            $tweet->retweets()->create([
-                'user_id' => $user->id,
-            ]);
-        }
-
-        return redirect()->back();
+    if ($alreadyRetweeted) {
+        return response()->json(['message' => 'Already retweeted'], 409);
     }
+
+    $tweet->retweets()->create([
+        'user_id' => $user->id,
+    ]);
+
+    $newTweet = [
+        'id' => $tweet->id,
+        'content' => $tweet->content,
+        'exam_tag' => $tweet->exam_tag,
+        'created_at' => $tweet->created_at,
+        'likes_count' => $tweet->likes->count(),
+        'is_liked' => $tweet->likes->contains('user_id', $user->id),
+        'replies' => $tweet->replies->map(function ($reply) {
+            return [
+                'id' => $reply->id,
+                'content' => $reply->content,
+                'user' => [
+                    'id' => $reply->user->id,
+                    'name' => $reply->user->name,
+                ],
+            ];
+        }),
+        'retweets' => $tweet->retweets->map(function ($retweet) {
+            return [
+                'id' => $retweet->id,
+                'user_id' => $retweet->user_id,
+            ];
+        }),
+        'user' => [
+            'id' => $tweet->user->id,
+            'name' => $tweet->user->name,
+            'role' => $tweet->user->role,
+            'profile_photo_path' => $tweet->user->profile_photo_path,
+        ],
+    ];
+
+    return response()->json(['retweeted_tweet' => $newTweet]);
+}
+
 }

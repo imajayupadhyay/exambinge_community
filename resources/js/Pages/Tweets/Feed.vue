@@ -5,11 +5,18 @@
 
       <main class="md:col-span-6 col-span-12">
         <TweetForm
-          :form="form"
-          :examTags="examTags"
-          @tweet-posted="handleTweetPosted"
-        />
-        <TweetList :tweets="tweets" :defaultAvatar="defaultAvatar" />
+  :form="form"
+  :examTags="examTags"
+  @tweet-posted="prependTweet"
+/>
+
+<TweetList
+  :tweets="tweets"
+  :defaultAvatar="defaultAvatar"
+  @prepend-tweet="prependTweet"
+/>
+
+
       </main>
 
       <RightSidebar :examTags="examTags" />
@@ -35,6 +42,12 @@ const props = defineProps({
 })
 
 const tweets = ref([...props.tweets])
+const prependTweet = (tweet) => {
+  // Check if tweet already exists (prevent duplicate on retweet)
+  if (!tweets.value.find(t => t.id === tweet.id)) {
+    tweets.value.unshift(tweet)
+  }
+}
 const preferences = props.auth.user.preferences?.split(',') || []
 const defaultAvatar = 'https://ui-avatars.com/api/?name=EB+User&background=f97316&color=fff'
 
