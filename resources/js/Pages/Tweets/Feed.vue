@@ -4,6 +4,7 @@
       <LeftSidebar :preferences="preferences" />
 
       <main class="md:col-span-6 col-span-12">
+        <SearchBar /> 
         <TweetForm
   :form="form"
   :examTags="examTags"
@@ -30,6 +31,7 @@ import LeftSidebar from '@/Components/Tweets/LeftSidebar.vue'
 import RightSidebar from '@/Components/Tweets/RightSidebar.vue'
 import TweetForm from '@/Components/Tweets/TweetForm.vue'
 import TweetList from '@/Components/Tweets/TweetList.vue'
+import SearchBar from './Components/SearchBar.vue' 
 
 import { useForm } from '@inertiajs/vue3'
 import { defineProps, ref } from 'vue'

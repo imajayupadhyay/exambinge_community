@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Http\Controllers\SearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,7 +23,7 @@ Route::get('/', function () {
         'phpVersion'     => PHP_VERSION,
     ]);
 });
-
+Route::get('/search', [SearchController::class, 'index'])->name('search');
 /*
 |--------------------------------------------------------------------------
 | Google Auth Routes
