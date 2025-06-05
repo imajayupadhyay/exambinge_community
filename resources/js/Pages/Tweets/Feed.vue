@@ -53,12 +53,13 @@
           </div>
         </form>
 
-        <!-- TWEET LIST -->
+        <!-- TWEETS LIST -->
         <div
           v-for="tweet in tweets"
           :key="tweet.id"
           class="bg-white rounded-xl shadow p-4 mb-6 animate-fade-in"
         >
+          <!-- USER INFO -->
           <div class="flex items-center mb-2">
             <img
               :src="tweet.user.profile_photo_path ? `/storage/${tweet.user.profile_photo_path}` : defaultAvatar"
@@ -78,8 +79,10 @@
             </div>
           </div>
 
+          <!-- CONTENT -->
           <div class="text-gray-800 whitespace-pre-wrap">{{ tweet.content }}</div>
 
+          <!-- Exam Tags -->
           <div v-if="tweet.exam_tag" class="mt-3 flex flex-wrap gap-2">
             <span
               v-for="tag in tweet.exam_tag.split(',')"
@@ -90,16 +93,45 @@
             </span>
           </div>
 
-          <!-- LIKE BUTTON -->
-          <div class="mt-3 flex items-center gap-2 text-sm text-gray-600">
-            <button
-              @click.prevent="likeTweet(tweet.id)"
-              class="flex items-center space-x-1 hover:text-orange-500 transition"
-            >
+          <!-- ACTIONS -->
+          <div class="mt-4 flex items-center gap-6 text-sm text-gray-600">
+            <button @click.prevent="likeTweet(tweet.id)" class="flex items-center space-x-1 hover:text-orange-500 transition">
               <span v-if="tweet.is_liked">❤️</span>
               <span v-else>🤍</span>
               <span>{{ tweet.likes_count }}</span>
             </button>
+
+            <button @click="toggleReply(tweet.id)" class="hover:text-orange-500 transition">💬 {{ tweet.replies.length }}</button>
+            <button @click="retweet(tweet.id)" class="hover:text-orange-500 transition">🔁 {{ tweet.retweets.length }}</button>
+          </div>
+
+          <!-- REPLY BOX -->
+          <div v-if="replyingTo === tweet.id" class="mt-3">
+            <textarea
+              v-model="replyContent"
+              placeholder="Write your reply..."
+              class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              rows="3"
+            ></textarea>
+            <div class="text-right mt-2">
+              <button
+                @click="submitReply(tweet.id)"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded shadow"
+              >
+                Reply
+              </button>
+            </div>
+          </div>
+
+          <!-- REPLIES -->
+          <div v-if="tweet.replies && tweet.replies.length > 0" class="mt-4 border-t pt-4">
+            <div
+              v-for="reply in tweet.replies"
+              :key="reply.id"
+              class="text-sm text-gray-700 mb-2 border-b pb-2"
+            >
+              <strong>{{ reply.user.name }}:</strong> {{ reply.content }}
+            </div>
           </div>
         </div>
       </main>
@@ -130,7 +162,9 @@
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { useForm, router } from '@inertiajs/vue3'
 import Multiselect from 'vue-multiselect'
-import { defineProps } from 'vue'
+import { defineProps, ref } from 'vue'
+import axios from 'axios'
+
 
 const props = defineProps({
   tweets: Array,
@@ -146,6 +180,9 @@ const form = useForm({
   exam_tags: [],
 })
 
+const replyingTo = ref(null)
+const replyContent = ref('')
+
 const submitTweet = () => {
   form.post(route('tweets.store'), {
     onSuccess: () => form.reset(),
@@ -154,6 +191,31 @@ const submitTweet = () => {
 
 const likeTweet = (tweetId) => {
   router.post(route('tweets.like', tweetId))
+}
+
+const toggleReply = (tweetId) => {
+  replyingTo.value = replyingTo.value === tweetId ? null : tweetId
+  replyContent.value = ''
+}
+
+const submitReply = (tweetId) => {
+ axios.post(route('tweets.reply', tweetId), {
+  content: replyContent.value,
+})
+.then(response => {
+  replyContent.value = ''
+  replyingTo.value = null
+  // Optional: Add the new reply to UI without refresh
+  // tweet.replies.push(response.data.reply)
+})
+.catch(error => {
+  console.error(error)
+
+  })
+}
+
+const retweet = (tweetId) => {
+  router.post(route('tweets.retweet', tweetId))
 }
 </script>
 

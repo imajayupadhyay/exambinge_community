@@ -3,21 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tweet;
+use App\Models\Reply;
+use App\Models\Retweet;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Inertia\Inertia;
 
 class TweetController extends Controller
 {
     /**
-     * Show tweets with relationships and tag config
+     * Display the main tweet feed with user, likes, replies, and retweets
      */
     public function index()
     {
         $user = auth()->user();
 
-        $tweets = Tweet::with(['user', 'likes'])
+        $tweets = Tweet::with(['user', 'likes', 'replies.user', 'retweets'])
             ->latest()
             ->take(20)
             ->get()
@@ -29,6 +30,22 @@ class TweetController extends Controller
                     'created_at' => $tweet->created_at,
                     'likes_count' => $tweet->likes->count(),
                     'is_liked' => $tweet->likes->contains('user_id', $user->id),
+                    'replies' => $tweet->replies->map(function ($reply) {
+                        return [
+                            'id' => $reply->id,
+                            'content' => $reply->content,
+                            'user' => [
+                                'id' => $reply->user->id,
+                                'name' => $reply->user->name,
+                            ],
+                        ];
+                    }),
+                    'retweets' => $tweet->retweets->map(function ($retweet) {
+                        return [
+                            'id' => $retweet->id,
+                            'user_id' => $retweet->user_id,
+                        ];
+                    }),
                     'user' => [
                         'id' => $tweet->user->id,
                         'name' => $tweet->user->name,
@@ -47,7 +64,7 @@ class TweetController extends Controller
     }
 
     /**
-     * Store new tweet
+     * Store a new tweet
      */
     public function store(Request $request)
     {
@@ -70,20 +87,57 @@ class TweetController extends Controller
     }
 
     /**
-     * Toggle like/unlike
+     * Like or Unlike a tweet
      */
     public function like(Request $request, Tweet $tweet)
     {
         $user = $request->user();
-
         $existingLike = $tweet->likes()->where('user_id', $user->id)->first();
 
         if ($existingLike) {
             $existingLike->delete();
         } else {
-            $tweet->likes()->create(['user_id' => $user->id]);
+            $tweet->likes()->create([
+                'user_id' => $user->id,
+            ]);
         }
 
         return back();
+    }
+
+    /**
+     * Submit a reply to a tweet
+     */
+    public function reply(Request $request, Tweet $tweet)
+{
+    $request->validate([
+        'content' => 'required|string|max:280',
+    ]);
+
+    $reply = $tweet->replies()->create([
+        'user_id' => $request->user()->id,
+        'content' => $request->content,
+    ]);
+
+    return response()->json(['message' => 'Reply posted', 'reply' => $reply], 200);
+}
+
+
+    /**
+     * Retweet functionality
+     */
+    public function retweet(Request $request, Tweet $tweet)
+    {
+        $user = $request->user();
+
+        $alreadyRetweeted = $tweet->retweets()->where('user_id', $user->id)->exists();
+
+        if (!$alreadyRetweeted) {
+            $tweet->retweets()->create([
+                'user_id' => $user->id,
+            ]);
+        }
+
+        return redirect()->back();
     }
 }

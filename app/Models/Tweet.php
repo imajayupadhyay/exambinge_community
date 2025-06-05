@@ -25,5 +25,17 @@ public function isLikedBy($user)
    {
     return $this->likes->contains('user_id', $user->id);
    }
+
+   public function replies() {
+    return $this->hasMany(Reply::class);
+}
+
+public function retweets() {
+    return $this->hasMany(Retweet::class);
+}
+
+public function isRetweetedBy($user) {
+    return $this->retweets->contains('user_id', $user->id);
+}
 }
 
