@@ -67,43 +67,73 @@ class TweetController extends Controller
      * Store a new tweet
      */
     public function store(Request $request)
-    {
-        $request->validate([
-            'content' => 'required|string|max:280',
-            'exam_tags' => 'nullable|array',
-            'exam_tags.*' => 'string|max:50',
-        ]);
+{
+    $request->validate([
+        'content' => 'required|string|max:280',
+        'exam_tags' => 'nullable|array',
+        'exam_tags.*' => 'string|max:50',
+    ]);
 
-        $examTagString = is_array($request->exam_tags)
-            ? implode(',', array_map('trim', $request->exam_tags))
-            : null;
+    $examTagString = is_array($request->exam_tags)
+        ? implode(',', array_map('trim', $request->exam_tags))
+        : null;
 
-        $request->user()->tweets()->create([
-            'content' => $request->content,
-            'exam_tag' => $examTagString,
-        ]);
+    $tweet = $request->user()->tweets()->create([
+        'content' => $request->content,
+        'exam_tag' => $examTagString,
+    ]);
 
-        return redirect()->back();
-    }
+    // Load relations
+    $tweet->load(['user', 'replies.user', 'retweets', 'likes']);
+
+    $user = $request->user();
+
+    return response()->json([
+        'success' => true,
+        'tweet' => [
+            'id' => $tweet->id,
+            'content' => $tweet->content,
+            'exam_tag' => $tweet->exam_tag,
+            'created_at' => $tweet->created_at,
+            'likes_count' => $tweet->likes->count(),
+            'is_liked' => false,
+            'replies' => [],
+            'retweets' => [],
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'role' => $user->role,
+                'profile_photo_path' => $user->profile_photo_path,
+            ],
+        ]
+    ]);
+}
+
 
     /**
      * Like or Unlike a tweet
      */
-    public function like(Request $request, Tweet $tweet)
-    {
-        $user = $request->user();
-        $existingLike = $tweet->likes()->where('user_id', $user->id)->first();
+   public function like(Request $request, Tweet $tweet)
+{
+    $user = $request->user();
+    $existingLike = $tweet->likes()->where('user_id', $user->id)->first();
 
-        if ($existingLike) {
-            $existingLike->delete();
-        } else {
-            $tweet->likes()->create([
-                'user_id' => $user->id,
-            ]);
-        }
-
-        return back();
+    if ($existingLike) {
+        $existingLike->delete();
+    } else {
+        $tweet->likes()->create([
+            'user_id' => $user->id,
+        ]);
     }
+
+    $tweet->load('likes');
+
+    return response()->json([
+        'likes_count' => $tweet->likes->count(),
+        'is_liked' => $tweet->likes->contains('user_id', $user->id),
+    ]);
+}
+
 
     /**
      * Submit a reply to a tweet
