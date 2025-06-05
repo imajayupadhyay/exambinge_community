@@ -34,25 +34,25 @@ Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes
+| Authenticated Routes (Protected)
 |--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth', 'verified'])->group(function () {
+
     // Dashboard
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    // Onboarding (after login)
-  Route::get('/onboarding', function () {
-    return auth()->user()->onboarded
-        ? redirect()->route('tweets.index')
-        : Inertia::render('Onboarding');
-})->name('onboarding');
+    // Onboarding Page
+    Route::get('/onboarding', function () {
+        return auth()->user()->onboarded
+            ? redirect()->route('tweets.index')
+            : Inertia::render('Onboarding');
+    })->name('onboarding');
 
-
-    // Save Preferences
+    // Save Preferences (Onboarding)
     Route::post('/save-preferences', function (Request $request) {
         $user = auth()->user();
         $user->preferences = implode(',', $request->preferences ?? []);
@@ -62,23 +62,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route('tweets.index');
     })->name('preferences.save');
 
-    // Profile
-    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/profile', function () {
-    return Inertia::render('Profile');
-})->name('profile');
-    // Tweets (now protected)
+    // Tweets
     Route::get('/tweets', [TweetController::class, 'index'])->name('tweets.index');
     Route::post('/tweets', [TweetController::class, 'store'])->name('tweets.store');
+
+    // Profile Routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Auth Routes (Laravel Breeze)
+| Breeze Auth Routes
 |--------------------------------------------------------------------------
 */
 
-
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

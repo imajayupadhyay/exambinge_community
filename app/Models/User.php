@@ -2,31 +2,38 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Mass assignable fields.
      *
-     * @var list<string>
+     * @var array<string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'profile_photo_path',
+        'phone',
+        'age',
+        'city',
+        'preferences',
+        'role',
+        'google_id',
+        'avatar',
+        'onboarded',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Hidden attributes for arrays.
      *
-     * @var list<string>
+     * @var array<string>
      */
     protected $hidden = [
         'password',
@@ -34,20 +41,21 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Cast attributes.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
-    public function tweets()
-{
-    return $this->hasMany(Tweet::class);
-}
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'onboarded' => 'boolean',
+        'age' => 'integer',
+    ];
 
+    /**
+     * Relationship: User has many Tweets.
+     */
+    public function tweets()
+    {
+        return $this->hasMany(\App\Models\Tweet::class);
+    }
 }

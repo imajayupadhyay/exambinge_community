@@ -3,41 +3,55 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Show the profile edit form.
      */
     public function edit(Request $request): Response
     {
+        $user = User::with('tweets')->findOrFail($request->user()->id);
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'user' => $user,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
         ]);
     }
 
     /**
-     * Update the user's profile information.
+     * Update the user's profile.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $data = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Handle photo upload if provided
+        if ($request->hasFile('profile_photo')) {
+            $path = $request->file('profile_photo')->store('profile_photos', 'public');
+            $data['profile_photo_path'] = $path;
         }
 
-        $request->user()->save();
+        // Reset email verification if changed
+        if (isset($data['email']) && $user->email !== $data['email']) {
+            $user->email_verified_at = null;
+        }
 
-        return Redirect::route('profile.edit');
+        $user->fill($data);
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('status', 'Profile updated successfully!');
     }
 
     /**
@@ -50,9 +64,7 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-
         Auth::logout();
-
         $user->delete();
 
         $request->session()->invalidate();
