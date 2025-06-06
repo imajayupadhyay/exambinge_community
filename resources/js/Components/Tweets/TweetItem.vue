@@ -1,10 +1,10 @@
 <template>
-  <div class="bg-white shadow-md rounded-lg p-4 mb-6 animate-fade-in">
+  <div class="bg-white rounded-xl shadow p-5 mb-6 animate-fade-in transition-all">
     <!-- USER INFO -->
-    <div class="flex items-center mb-4">
+    <div class="flex items-center mb-3">
       <img
         :src="tweet.user.profile_photo_path ? `/storage/${tweet.user.profile_photo_path}` : defaultAvatar"
-        class="w-10 h-10 rounded-full border-2 border-orange-500 mr-3"
+        class="w-11 h-11 rounded-full border-2 border-orange-400 mr-3"
       />
       <div>
         <div class="font-semibold text-gray-800 flex items-center gap-2">
@@ -18,9 +18,11 @@
     </div>
 
     <!-- CONTENT -->
-    <p class="text-gray-800 whitespace-pre-wrap">{{ tweet.content }}</p>
+    <div class="text-gray-800 whitespace-pre-wrap text-base leading-relaxed">
+      {{ tweet.content }}
+    </div>
 
-    <!-- TAGS -->
+    <!-- EXAM TAGS -->
     <div v-if="tweet.exam_tag" class="mt-3 flex flex-wrap gap-2">
       <span
         v-for="tag in tweet.exam_tag.split(',')"
@@ -31,46 +33,48 @@
       </span>
     </div>
 
-    <!-- ACTION BUTTONS -->
-    <div class="mt-4 flex justify-between text-sm text-gray-600">
-      <!-- LIKE -->
+    <!-- ACTIONS -->
+    <div class="mt-4 flex items-center gap-6 text-gray-700 text-sm">
+      <!-- Like -->
       <button
-        @click="likeTweet(tweet.id)"
-        class="flex items-center gap-1 hover:text-red-500 transition"
+        @click.prevent="likeTweet(tweet.id)"
+        class="flex items-center gap-2 hover:text-red-600 transition"
       >
-        <span>{{ tweet.is_liked ? '❤️' : '🤍' }}</span>
+        <span class="text-lg">
+          {{ tweet.is_liked ? '❤️' : '🤍' }}
+        </span>
         <span>{{ tweet.likes_count }}</span>
       </button>
 
-      <!-- COMMENT -->
+      <!-- Reply -->
       <button
         @click="toggleReply"
-        class="flex items-center gap-1 hover:text-orange-500 transition"
+        class="flex items-center gap-2 hover:text-blue-500 transition"
       >
         💬 <span>{{ tweet.replies.length }}</span>
       </button>
 
-      <!-- RETWEET -->
+      <!-- Retweet -->
       <button
         @click="retweet(tweet.id)"
-        class="flex items-center gap-1 hover:text-blue-500 transition"
+        class="flex items-center gap-2 hover:text-green-600 transition"
       >
         🔁 <span>{{ tweet.retweets.length }}</span>
       </button>
     </div>
 
     <!-- REPLY BOX -->
-    <div v-if="isReplying" class="mt-4">
+    <div v-if="isReplying" class="mt-3">
       <textarea
         v-model="localReplyContent"
-        class="w-full border rounded-md p-2 focus:outline-orange-400 text-sm"
-        rows="3"
         placeholder="Write your reply..."
+        rows="3"
+        class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
       ></textarea>
       <div class="text-right mt-2">
         <button
           @click="submitReply"
-          class="bg-blue-500 text-white px-4 py-1 rounded-md hover:bg-blue-600 text-sm"
+          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 text-sm rounded shadow"
         >
           Reply
         </button>
@@ -78,13 +82,13 @@
     </div>
 
     <!-- REPLIES -->
-    <div v-if="tweet.replies.length" class="mt-4 border-t pt-4">
+    <div v-if="tweet.replies?.length" class="mt-4 border-t pt-4 space-y-3">
       <div
         v-for="reply in tweet.replies"
         :key="reply.id"
-        class="text-sm text-gray-700 mb-2 border-b pb-2"
+        class="text-sm text-gray-700"
       >
-        <strong>{{ reply.user.name }}</strong>: {{ reply.content }}
+        <strong>{{ reply.user.name }}:</strong> {{ reply.content }}
       </div>
     </div>
   </div>
@@ -96,64 +100,74 @@ import axios from 'axios'
 
 const props = defineProps({
   tweet: Object,
-  defaultAvatar: String
+  defaultAvatar: String,
 })
 
 const emit = defineEmits(['update:tweet', 'add-retweet'])
 
 const localTweet = ref(JSON.parse(JSON.stringify(props.tweet)))
-
-watch(() => props.tweet, (val) => {
-  localTweet.value = JSON.parse(JSON.stringify(val))
-})
-
 const isReplying = ref(false)
 const localReplyContent = ref('')
 
+// Sync props with local tweet
+watch(() => props.tweet, (newVal) => {
+  localTweet.value = JSON.parse(JSON.stringify(newVal))
+})
+
+// Like action
+const likeTweet = async (tweetId) => {
+  try {
+    const res = await axios.post(route('tweets.like', tweetId))
+    localTweet.value.likes_count = res.data.likes_count
+    localTweet.value.is_liked = res.data.is_liked
+    emit('update:tweet', localTweet.value)
+  } catch (err) {
+    console.error('Like failed:', err)
+  }
+}
+
+// Toggle reply form
 const toggleReply = () => {
   isReplying.value = !isReplying.value
   localReplyContent.value = ''
 }
 
-const likeTweet = async (tweetId) => {
-  try {
-    const response = await axios.post(route('tweets.like', tweetId))
-    localTweet.value.likes_count = response.data.likes_count
-    localTweet.value.is_liked = response.data.is_liked
-    emit('update:tweet', localTweet.value)
-  } catch (err) {
-    console.error('Like error:', err)
-  }
-}
-
+// Submit reply
 const submitReply = async () => {
   try {
-    const response = await axios.post(route('tweets.reply', localTweet.value.id), {
+    const res = await axios.post(route('tweets.reply', localTweet.value.id), {
       content: localReplyContent.value,
     })
-    localTweet.value.replies.push(response.data.reply)
+    localTweet.value.replies.push(res.data.reply)
     emit('update:tweet', localTweet.value)
-    isReplying.value = false
     localReplyContent.value = ''
+    isReplying.value = false
   } catch (err) {
-    console.error('Reply error:', err)
+    console.error('Reply failed:', err)
   }
 }
 
+// Retweet
 const retweet = async (tweetId) => {
   try {
-    const response = await axios.post(route('tweets.retweet', tweetId))
-    emit('add-retweet', response.data.retweeted_tweet)
+    const res = await axios.post(route('tweets.retweet', tweetId))
+    emit('add-retweet', res.data.retweeted_tweet)
   } catch (err) {
-    console.error('Retweet error:', err)
+    console.error('Retweet failed:', err)
   }
 }
 </script>
 
 <style scoped>
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .animate-fade-in {
   animation: fade-in 0.4s ease-in-out;

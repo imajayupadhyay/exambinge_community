@@ -51,7 +51,7 @@ public function index(Request $request)
         ];
     });
 
-    if ($request->wantsJson() || $request->ajax()) {
+    if ($request->expectsJson()) {
         return response()->json([
             'tweets' => $tweets->items(), // ✅ Already transformed
             'nextPage' => $tweets->nextPageUrl(),
