@@ -14,54 +14,59 @@ class TweetController extends Controller
     /**
      * Display the main tweet feed with user, likes, replies, and retweets
      */
-    public function index()
-    {
-        $user = auth()->user();
+    
 
-        $tweets = Tweet::with(['user', 'likes', 'replies.user', 'retweets'])
-            ->latest()
-            ->take(20)
-            ->get()
-            ->map(function ($tweet) use ($user) {
-                return [
-                    'id' => $tweet->id,
-                    'content' => $tweet->content,
-                    'exam_tag' => $tweet->exam_tag,
-                    'created_at' => $tweet->created_at,
-                    'likes_count' => $tweet->likes->count(),
-                    'is_liked' => $tweet->likes->contains('user_id', $user->id),
-                    'replies' => $tweet->replies->map(function ($reply) {
-                        return [
-                            'id' => $reply->id,
-                            'content' => $reply->content,
-                            'user' => [
-                                'id' => $reply->user->id,
-                                'name' => $reply->user->name,
-                            ],
-                        ];
-                    }),
-                    'retweets' => $tweet->retweets->map(function ($retweet) {
-                        return [
-                            'id' => $retweet->id,
-                            'user_id' => $retweet->user_id,
-                        ];
-                    }),
-                    'user' => [
-                        'id' => $tweet->user->id,
-                        'name' => $tweet->user->name,
-                        'role' => $tweet->user->role,
-                        'profile_photo_path' => $tweet->user->profile_photo_path,
-                    ],
-                ];
-            });
+public function index(Request $request)
+{
+    $user = auth()->user();
 
-        $examTags = Config::get('exam_tags');
+    $tweets = Tweet::with(['user', 'likes', 'replies.user', 'retweets'])
+        ->latest()
+        ->paginate(10);
 
-        return Inertia::render('Tweets/Feed', [
-            'tweets' => $tweets,
-            'examTags' => $examTags,
+    // Transform once
+    $tweets->getCollection()->transform(function ($tweet) use ($user) {
+        return [
+            'id' => $tweet->id,
+            'content' => $tweet->content,
+            'exam_tag' => $tweet->exam_tag,
+            'created_at' => $tweet->created_at,
+            'likes_count' => $tweet->likes->count(),
+            'is_liked' => $tweet->likes->contains('user_id', $user->id),
+            'replies' => $tweet->replies->map(fn($r) => [
+                'id' => $r->id,
+                'content' => $r->content,
+                'user' => ['id' => $r->user->id, 'name' => $r->user->name]
+            ]),
+            'retweets' => $tweet->retweets->map(fn($rt) => [
+                'id' => $rt->id,
+                'user_id' => $rt->user_id
+            ]),
+            'user' => [
+                'id' => $tweet->user->id,
+                'name' => $tweet->user->name,
+                'role' => $tweet->user->role,
+                'profile_photo_path' => $tweet->user->profile_photo_path,
+            ],
+        ];
+    });
+
+    if ($request->wantsJson() || $request->ajax()) {
+        return response()->json([
+            'tweets' => $tweets->items(), // ✅ Already transformed
+            'nextPage' => $tweets->nextPageUrl(),
         ]);
     }
+
+    $examTags = Config::get('exam_tags');
+
+    return Inertia::render('Tweets/Feed', [
+        'tweets' => $tweets->items(),
+        'nextPageUrl' => $tweets->nextPageUrl(),
+        'examTags' => $examTags,
+    ]);
+}
+
 
     /**
      * Store a new tweet

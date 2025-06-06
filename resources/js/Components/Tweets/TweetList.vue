@@ -1,17 +1,17 @@
 <template>
   <div>
     <TweetItem
-      v-for="(tweet, index) in localTweets"
+      v-for="(tweet, index) in tweets"
       :key="tweet.id"
-      v-model:tweet="localTweets[index]"
+      :tweet="tweet"
       :defaultAvatar="defaultAvatar"
-      @add-retweet="prependTweet"
+      @update:tweet="(updatedTweet) => updateTweet(index, updatedTweet)"
+      @add-retweet="handleRetweet"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
 import TweetItem from './TweetItem.vue'
 
 const emit = defineEmits(['prepend-tweet'])
@@ -21,14 +21,14 @@ const props = defineProps({
   defaultAvatar: String,
 })
 
-const localTweets = ref([...props.tweets])
+// Replace a tweet in-place when it's updated (likes/replies)
+const updateTweet = (index, updatedTweet) => {
+  props.tweets[index] = { ...updatedTweet }
+}
 
-watch(() => props.tweets, (newVal) => {
-  localTweets.value = [...newVal]
-})
-
-const prependTweet = (tweet) => {
-  localTweets.value.unshift(tweet)
+// Add new retweet to top and emit to parent for global sync
+const handleRetweet = (tweet) => {
+  props.tweets.unshift(tweet)
   emit('prepend-tweet', tweet)
 }
 </script>
