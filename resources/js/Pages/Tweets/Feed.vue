@@ -4,7 +4,7 @@
       <LeftSidebar :preferences="preferences" />
 
       <main class="md:col-span-6 col-span-12">
-        <SearchBar />
+        <!-- <SearchBar /> -->
         <TweetForm :form="form" :examTags="examTags" @tweet-posted="prependTweet" />
 
         <InfiniteScroll :loading="loadingMore" @load-more="loadMoreTweets">

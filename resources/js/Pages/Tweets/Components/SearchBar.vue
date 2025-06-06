@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-6 relative">
+  <div class="relative">
     <input
       v-model="query"
       @input="performSearch"
