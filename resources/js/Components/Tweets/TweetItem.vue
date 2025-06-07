@@ -1,20 +1,30 @@
 <template>
   <div class="bg-white rounded-xl shadow p-5 mb-6 animate-fade-in transition-all">
     <!-- USER INFO -->
-    <div class="flex items-center mb-3">
-      <img
-        :src="tweet.user.profile_photo_path ? `/storage/${tweet.user.profile_photo_path}` : defaultAvatar"
-        class="w-11 h-11 rounded-full border-2 border-orange-400 mr-3"
-      />
-      <div>
-        <div class="font-semibold text-gray-800 flex items-center gap-2">
-          {{ tweet.user.name }}
-          <span v-if="tweet.user.role === 'teacher'" class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
-            🎓 Teacher
-          </span>
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center">
+        <img
+          :src="tweet.user.profile_photo_path ? `/storage/${tweet.user.profile_photo_path}` : defaultAvatar"
+          class="w-11 h-11 rounded-full border-2 border-orange-400 mr-3"
+        />
+        <div>
+          <div class="font-semibold text-gray-800 flex items-center gap-2">
+            {{ tweet.user.name }}
+            <span v-if="tweet.user.role === 'teacher'" class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
+              🎓 Teacher
+            </span>
+          </div>
+          <div class="text-xs text-gray-500">{{ new Date(tweet.created_at).toLocaleString() }}</div>
         </div>
-        <div class="text-xs text-gray-500">{{ new Date(tweet.created_at).toLocaleString() }}</div>
       </div>
+
+      <!-- Follow Button -->
+      <FollowButton
+  v-if="tweet.user.id !== currentUser?.id"
+  :user-id="tweet.user.id"
+  :initial-is-following="tweet.user.is_followed"
+/>
+
     </div>
 
     <!-- CONTENT -->
@@ -35,30 +45,16 @@
 
     <!-- ACTIONS -->
     <div class="mt-4 flex items-center gap-6 text-gray-700 text-sm">
-      <!-- Like -->
-      <button
-        @click.prevent="likeTweet(tweet.id)"
-        class="flex items-center gap-2 hover:text-red-600 transition"
-      >
-        <span class="text-lg">
-          {{ tweet.is_liked ? '❤️' : '🤍' }}
-        </span>
+      <button @click.prevent="likeTweet(tweet.id)" class="flex items-center gap-2 hover:text-red-600 transition">
+        <span class="text-lg">{{ tweet.is_liked ? '❤️' : '🤍' }}</span>
         <span>{{ tweet.likes_count }}</span>
       </button>
 
-      <!-- Reply -->
-      <button
-        @click="toggleReply"
-        class="flex items-center gap-2 hover:text-blue-500 transition"
-      >
+      <button @click="toggleReply" class="flex items-center gap-2 hover:text-blue-500 transition">
         💬 <span>{{ tweet.replies.length }}</span>
       </button>
 
-      <!-- Retweet -->
-      <button
-        @click="retweet(tweet.id)"
-        class="flex items-center gap-2 hover:text-green-600 transition"
-      >
+      <button @click="retweet(tweet.id)" class="flex items-center gap-2 hover:text-green-600 transition">
         🔁 <span>{{ tweet.retweets.length }}</span>
       </button>
     </div>
@@ -97,6 +93,8 @@
 <script setup>
 import { ref, watch } from 'vue'
 import axios from 'axios'
+import FollowButton from '@/Pages/Users/Components/FollowButton.vue'
+import { usePage } from '@inertiajs/vue3'
 
 const props = defineProps({
   tweet: Object,
@@ -109,12 +107,12 @@ const localTweet = ref(JSON.parse(JSON.stringify(props.tweet)))
 const isReplying = ref(false)
 const localReplyContent = ref('')
 
-// Sync props with local tweet
+const currentUser = usePage().props.auth?.user || null
+
 watch(() => props.tweet, (newVal) => {
   localTweet.value = JSON.parse(JSON.stringify(newVal))
 })
 
-// Like action
 const likeTweet = async (tweetId) => {
   try {
     const res = await axios.post(route('tweets.like', tweetId))
@@ -126,13 +124,11 @@ const likeTweet = async (tweetId) => {
   }
 }
 
-// Toggle reply form
 const toggleReply = () => {
   isReplying.value = !isReplying.value
   localReplyContent.value = ''
 }
 
-// Submit reply
 const submitReply = async () => {
   try {
     const res = await axios.post(route('tweets.reply', localTweet.value.id), {
@@ -147,7 +143,6 @@ const submitReply = async () => {
   }
 }
 
-// Retweet
 const retweet = async (tweetId) => {
   try {
     const res = await axios.post(route('tweets.retweet', tweetId))

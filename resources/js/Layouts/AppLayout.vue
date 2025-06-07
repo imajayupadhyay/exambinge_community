@@ -22,6 +22,10 @@
             href="/myfeeds"
             :class="navLinkClass('/myfeeds')"
           >My Feeds</Link>
+          <Link
+            href="/followers"
+            :class="navLinkClass('/myfeeds')"
+          >Followers</Link>
 
           <Link
             href="/profile"
@@ -84,6 +88,7 @@
 
         <Link href="/tweets" :class="mobileNavClass('/tweets')">Feed</Link>
         <Link href="/myfeeds" :class="mobileNavClass('/myfeeds')">My Feeds</Link>
+        <Link href="/followers" :class="mobileNavClass('/tweets')">Followers</Link>
         <Link href="/profile" :class="mobileNavClass('/profile')">Profile</Link>
 
         <div class="flex items-center gap-2 mt-4">

@@ -43,11 +43,14 @@ public function index(Request $request)
                 'user_id' => $rt->user_id
             ]),
             'user' => [
-                'id' => $tweet->user->id,
-                'name' => $tweet->user->name,
-                'role' => $tweet->user->role,
-                'profile_photo_path' => $tweet->user->profile_photo_path,
-            ],
+    'id' => $tweet->user->id,
+    'name' => $tweet->user->name,
+    'role' => $tweet->user->role,
+    'profile_photo_path' => $tweet->user->profile_photo_path,
+    'is_followed' => $user->id !== $tweet->user->id
+        ? $user->isFollowing($tweet->user->id)
+        : false, // A user can't follow themselves
+],
         ];
     });
 
