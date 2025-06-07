@@ -7,12 +7,23 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\MyFeedController;
 
 /*
 |--------------------------------------------------------------------------
 | Public Routes
 |--------------------------------------------------------------------------
 */
+
+
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/myfeeds', [MyFeedController::class, 'index'])->name('myfeeds.index');
+    Route::post('/myfeeds', [MyFeedController::class, 'store'])->name('myfeeds.store');
+    Route::patch('/myfeeds/{tweet}', [MyFeedController::class, 'update'])->name('myfeeds.update');
+    Route::delete('/myfeeds/{tweet}', [MyFeedController::class, 'destroy'])->name('myfeeds.destroy');
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -22,7 +33,7 @@ Route::get('/', function () {
         'phpVersion'     => PHP_VERSION,
     ]);
 });
-
+Route::get('/search', [SearchController::class, 'index'])->name('search');
 /*
 |--------------------------------------------------------------------------
 | Google Auth Routes
@@ -65,6 +76,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Tweets
     Route::get('/tweets', [TweetController::class, 'index'])->name('tweets.index');
     Route::post('/tweets', [TweetController::class, 'store'])->name('tweets.store');
+    Route::post('/tweets/{tweet}/like', [TweetController::class, 'like'])->name('tweets.like');
+    Route::post('/tweets/{tweet}/reply', [TweetController::class, 'reply'])->name('tweets.reply');
+Route::post('/tweets/{tweet}/retweet', [TweetController::class, 'retweet'])->name('tweets.retweet');
+
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

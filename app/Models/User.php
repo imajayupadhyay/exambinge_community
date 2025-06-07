@@ -58,4 +58,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\Tweet::class);
     }
+
+    public function likes()
+    {
+        return $this->hasMany(Like::class);
+    }
+    public function replies() {
+    return $this->hasMany(Reply::class);
+}
+
+public function retweets() {
+    return $this->hasMany(Retweet::class);
+}
+
 }
