@@ -8,12 +8,22 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\MyFeedController;
 
 /*
 |--------------------------------------------------------------------------
 | Public Routes
 |--------------------------------------------------------------------------
 */
+
+
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/myfeeds', [MyFeedController::class, 'index'])->name('myfeeds.index');
+    Route::post('/myfeeds', [MyFeedController::class, 'store'])->name('myfeeds.store');
+    Route::patch('/myfeeds/{tweet}', [MyFeedController::class, 'update'])->name('myfeeds.update');
+    Route::delete('/myfeeds/{tweet}', [MyFeedController::class, 'destroy'])->name('myfeeds.destroy');
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [

@@ -7,28 +7,45 @@
         <h1 class="text-2xl font-bold text-orange-500">ExamBinge</h1>
 
         <!-- Desktop Search Bar -->
-        <div class="hidden lg:block w-1/2">
-          <SearchBar class="w-full" />
+        <div class="hidden lg:block">
+          <SearchBar class="w-80" />
         </div>
 
         <!-- Desktop Nav -->
-        <div class="hidden md:flex items-center gap-5">
-          <Link href="/tweets" class="text-gray-700 hover:text-orange-500 font-medium text-sm">Feed</Link>
-          <Link href="/profile" class="text-gray-700 hover:text-orange-500 font-medium text-sm">Profile</Link>
+        <div class="hidden md:flex items-center gap-6">
+          <Link
+            href="/tweets"
+            :class="navLinkClass('/tweets')"
+          >Feed</Link>
 
+          <Link
+            href="/myfeeds"
+            :class="navLinkClass('/myfeeds')"
+          >My Feeds</Link>
+
+          <Link
+            href="/profile"
+            :class="navLinkClass('/profile')"
+          >Profile</Link>
+
+          <!-- User Info -->
           <div class="flex items-center gap-2">
             <img
               :src="user?.avatar || defaultAvatar"
               alt="avatar"
               class="w-9 h-9 rounded-full border object-cover border-orange-400"
             />
-            <span class="text-sm font-medium text-gray-800">{{ user?.name }}</span>
+            <div class="leading-tight">
+              <p class="text-sm font-semibold">{{ user?.name?.split(' ')[0] }}</p>
+              <p class="text-xs text-gray-500">{{ user?.name?.split(' ')[1] || '' }}</p>
+            </div>
           </div>
 
+          <!-- Logout -->
           <form @submit.prevent="logout">
             <button
               type="submit"
-              class="text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded transition"
+              class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 text-sm font-semibold rounded-full transition shadow"
             >
               Logout
             </button>
@@ -51,7 +68,7 @@
     <transition name="slide">
       <div
         v-if="mobileOpen"
-        class="fixed top-0 right-0 w-72 h-full bg-white shadow-lg z-50 p-5 flex flex-col gap-4"
+        class="fixed inset-y-0 right-0 w-72 bg-white shadow-xl z-50 p-5 flex flex-col gap-4"
       >
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold text-orange-500">Menu</h2>
@@ -65,10 +82,11 @@
 
         <SearchBar />
 
-        <Link href="/tweets" class="block text-gray-800 font-medium hover:text-orange-500">Feed</Link>
-        <Link href="/profile" class="block text-gray-800 font-medium hover:text-orange-500">Profile</Link>
+        <Link href="/tweets" :class="mobileNavClass('/tweets')">Feed</Link>
+        <Link href="/myfeeds" :class="mobileNavClass('/myfeeds')">My Feeds</Link>
+        <Link href="/profile" :class="mobileNavClass('/profile')">Profile</Link>
 
-        <div class="flex items-center gap-2 mt-2">
+        <div class="flex items-center gap-2 mt-4">
           <img
             :src="user?.avatar || defaultAvatar"
             alt="avatar"
@@ -80,7 +98,7 @@
         <form @submit.prevent="logout">
           <button
             type="submit"
-            class="mt-3 w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded text-sm font-semibold"
+            class="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow"
           >
             Logout
           </button>
@@ -99,14 +117,23 @@
 import { Link, useForm, usePage } from '@inertiajs/vue3'
 import SearchBar from '@/Pages/Tweets/Components/SearchBar.vue'
 import { ref } from 'vue'
-
 const user = usePage().props.auth?.user || null
 const defaultAvatar = 'https://ui-avatars.com/api/?name=EB+User&background=f97316&color=fff'
+const mobileOpen = ref(false)
 
 const logoutForm = useForm({})
 const logout = () => logoutForm.post(route('logout'))
 
-const mobileOpen = ref(false)
+// Utility to highlight active route
+const navLinkClass = (path) =>
+  route().current(path)
+    ? 'text-orange-600 font-semibold text-sm border-b-2 border-orange-500 pb-1'
+    : 'text-gray-700 hover:text-orange-500 text-sm transition'
+
+const mobileNavClass = (path) =>
+  route().current(path)
+    ? 'text-orange-600 font-semibold'
+    : 'text-gray-700 hover:text-orange-500'
 </script>
 
 <style scoped>
