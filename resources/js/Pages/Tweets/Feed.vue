@@ -1,7 +1,11 @@
 <template>
   <AppLayout>
     <div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-12 gap-6">
-      <LeftSidebar :preferences="preferences" />
+      <div class="md:col-span-3 col-span-12 sticky top-24 self-start h-fit">
+      <LeftSidebar />
+</div>
+
+
 
       <main class="md:col-span-6 col-span-12">
         <!-- <SearchBar /> -->
@@ -16,7 +20,9 @@
         </InfiniteScroll>
       </main>
 
-      <RightSidebar :examTags="examTags" />
+     <div class="md:col-span-3 col-span-12 sticky top-24 self-start h-fit">
+  <RightSidebar :examTags="examTags" />
+</div>
     </div>
   </AppLayout>
 </template>

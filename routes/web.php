@@ -10,6 +10,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\MyFeedController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\LeftSidebarController;
 
 /*
 |--------------------------------------------------------------------------
@@ -99,6 +100,11 @@ Route::post('/tweets/{tweet}/retweet', [TweetController::class, 'retweet'])->nam
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/left-sidebar-data', [LeftSidebarController::class, 'fetch'])->name('leftsidebar.fetch');
+
+
+
 });
 
 /*
