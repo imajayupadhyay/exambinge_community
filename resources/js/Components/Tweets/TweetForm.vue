@@ -1,80 +1,134 @@
 <template>
-  <div>
-    <form @submit.prevent="submitTweet" class="mb-8 p-6 bg-white border rounded-xl shadow animate-fade-in-up">
-      <h2 class="text-xl font-semibold text-gray-800 mb-3">What's on your mind?</h2>
+  <div class="mb-8 p-6 bg-white border border-gray-200 rounded-2xl shadow-xl animate-fade-in-up space-y-6">
+    <h2 class="text-2xl font-bold text-gray-800">What's on your mind?</h2>
 
-      <textarea
-        v-model="form.content"
-        placeholder="Write your thoughts here..."
-        class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-orange-400 text-gray-800"
-        rows="4"
-      ></textarea>
+    <!-- RICH TEXT EDITOR -->
+    <div ref="editorRoot" class="border border-gray-300 rounded-lg overflow-hidden"></div>
 
-      <div class="mt-4">
-        <label class="block text-sm text-gray-700 mb-1">Select Exam Tag(s):</label>
-        <Multiselect
-          v-model="form.exam_tags"
-          :options="examTags"
-          :multiple="true"
-          placeholder="Choose exams"
-          class="mt-1"
-        />
-      </div>
-
-      <div class="text-right mt-6">
+    <!-- EXAM TAGS -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-2">Exam Tags:</label>
+      <div class="flex flex-wrap gap-2">
         <button
-          type="submit"
-          class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded font-semibold shadow transition"
-          :disabled="form.processing"
+          v-for="tag in availableTags"
+          :key="tag"
+          :class="[
+            'px-3 py-1 rounded-full text-sm font-medium transition',
+            form.exam_tags.includes(tag)
+              ? 'bg-orange-500 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-orange-100 hover:text-orange-600',
+          ]"
+          @click.prevent="toggleTag(tag)"
         >
-          Post
+          #{{ tag }}
         </button>
       </div>
-    </form>
+    </div>
 
-    <!-- PROGRESS BAR -->
-    <div v-if="showProgress" class="h-1 bg-orange-200 overflow-hidden rounded-full mt-2">
+    <!-- IMAGE UPLOAD -->
+    <div class="border border-dashed border-gray-300 p-4 rounded-lg relative bg-gray-50 hover:bg-gray-100 transition">
+      <label class="block text-sm font-semibold text-gray-700 mb-2">Attach Image:</label>
+      <input
+        type="file"
+        accept="image/*"
+        @change="handleImageUpload"
+        class="absolute inset-0 opacity-0 cursor-pointer"
+      />
+      <div class="text-gray-500 text-sm">Drag & drop or click to upload image</div>
+      <div v-if="imagePreview" class="mt-4">
+        <img :src="imagePreview" class="max-h-64 rounded border shadow" />
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="flex justify-end items-center gap-4">
+      <button
+        @click="submitTweet"
+        :disabled="form.processing"
+        class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-full shadow-lg transition"
+      >
+        🚀 Post
+      </button>
+    </div>
+
+    <!-- PROGRESS -->
+    <div v-if="showProgress" class="h-1 bg-orange-200 rounded-full overflow-hidden">
       <div class="h-full bg-orange-500 animate-progress"></div>
     </div>
   </div>
 </template>
 
 <script setup>
-import Multiselect from 'vue-multiselect'
 import { useForm } from '@inertiajs/vue3'
-import axios from 'axios'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import Editor from '@toast-ui/editor'
 
 const emit = defineEmits(['tweet-posted'])
-const props = defineProps({ examTags: Array })
+
+const availableTags = ['UPSC', 'SSC', 'Banking', 'Railway', 'Defence']
 
 const form = useForm({
   content: '',
   exam_tags: [],
 })
 
+const imageFile = ref(null)
+const imagePreview = ref(null)
 const showProgress = ref(false)
+
+let editorInstance = null
+const editorRoot = ref(null)
+
+onMounted(() => {
+  editorInstance = new Editor({
+    el: editorRoot.value,
+    height: '200px',
+    initialEditType: 'wysiwyg',
+    previewStyle: 'vertical',
+    usageStatistics: false,
+  })
+})
+
+const toggleTag = (tag) => {
+  const index = form.exam_tags.indexOf(tag)
+  if (index > -1) {
+    form.exam_tags.splice(index, 1)
+  } else {
+    form.exam_tags.push(tag)
+  }
+}
+
+const handleImageUpload = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    imageFile.value = file
+    imagePreview.value = URL.createObjectURL(file)
+  }
+}
 
 const submitTweet = async () => {
   try {
     showProgress.value = true
-    const response = await axios.post(route('tweets.store'), {
-      content: form.content,
-      exam_tags: form.exam_tags,
+    const formData = new FormData()
+    formData.append('content', editorInstance.getMarkdown())
+    form.exam_tags.forEach(tag => formData.append('exam_tags[]', tag))
+    if (imageFile.value) formData.append('image', imageFile.value)
+
+    const response = await axios.post(route('tweets.store'), formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
 
     form.reset()
+    imageFile.value = null
+    imagePreview.value = null
+    editorInstance.setMarkdown('')
 
     if (response.data.tweet) {
       emit('tweet-posted', response.data.tweet)
-
-      // simulate delay then reload page
-      setTimeout(() => {
-        window.location.reload()
-      }, 1500) // 1.5 seconds after progress bar shows
+      setTimeout(() => window.location.reload(), 1500)
     }
-  } catch (error) {
-    console.error('Tweet post failed:', error)
+  } catch (err) {
+    console.error('Tweet post failed:', err)
     showProgress.value = false
   }
 }
@@ -94,4 +148,6 @@ const submitTweet = async () => {
 }
 </style>
 
-<style src="vue-multiselect/dist/vue-multiselect.css"></style>
+<style>
+@import '@toast-ui/editor/dist/toastui-editor.css';
+</style>

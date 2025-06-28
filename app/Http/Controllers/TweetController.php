@@ -30,6 +30,7 @@ public function index(Request $request)
             'id' => $tweet->id,
             'content' => $tweet->content,
             'exam_tag' => $tweet->exam_tag,
+            'image' => $tweet->image ? asset('storage/' . $tweet->image) : null,
             'created_at' => $tweet->created_at,
             'likes_count' => $tweet->likes->count(),
             'is_liked' => $tweet->likes->contains('user_id', $user->id),
@@ -43,11 +44,14 @@ public function index(Request $request)
                 'user_id' => $rt->user_id
             ]),
             'user' => [
-                'id' => $tweet->user->id,
-                'name' => $tweet->user->name,
-                'role' => $tweet->user->role,
-                'profile_photo_path' => $tweet->user->profile_photo_path,
-            ],
+    'id' => $tweet->user->id,
+    'name' => $tweet->user->name,
+    'role' => $tweet->user->role,
+    'profile_photo_path' => $tweet->user->profile_photo_path,
+    'is_followed' => $user->id !== $tweet->user->id
+        ? $user->isFollowing($tweet->user->id)
+        : false, // A user can't follow themselves
+],
         ];
     });
 
@@ -71,24 +75,30 @@ public function index(Request $request)
     /**
      * Store a new tweet
      */
-    public function store(Request $request)
+public function store(Request $request)
 {
     $request->validate([
         'content' => 'required|string|max:280',
         'exam_tags' => 'nullable|array',
         'exam_tags.*' => 'string|max:50',
+        'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
     ]);
 
     $examTagString = is_array($request->exam_tags)
         ? implode(',', array_map('trim', $request->exam_tags))
         : null;
 
+    $imagePath = null;
+    if ($request->hasFile('image')) {
+        $imagePath = $request->file('image')->store('tweets', 'public');
+    }
+
     $tweet = $request->user()->tweets()->create([
         'content' => $request->content,
         'exam_tag' => $examTagString,
+        'image' => $imagePath,
     ]);
 
-    // Load relations
     $tweet->load(['user', 'replies.user', 'retweets', 'likes']);
 
     $user = $request->user();
@@ -99,6 +109,7 @@ public function index(Request $request)
             'id' => $tweet->id,
             'content' => $tweet->content,
             'exam_tag' => $tweet->exam_tag,
+            'image' => $tweet->image ? asset('storage/' . $tweet->image) : null,
             'created_at' => $tweet->created_at,
             'likes_count' => $tweet->likes->count(),
             'is_liked' => false,

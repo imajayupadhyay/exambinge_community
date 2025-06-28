@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Follower;
 
 class User extends Authenticatable
 {
@@ -70,5 +71,26 @@ class User extends Authenticatable
 public function retweets() {
     return $this->hasMany(Retweet::class);
 }
+
+// Users who follow this user
+public function followers()
+{
+    return $this->hasMany(Follower::class, 'followed_id');
+}
+
+public function followings()
+{
+    return $this->hasMany(Follower::class, 'follower_id');
+}
+public function isFollowing($userId)
+{
+    return $this->followings()->where('followed_id', $userId)->exists();
+}
+
+public function isFollowedBy($userId)
+{
+    return $this->followers()->where('follower_id', $userId)->exists();
+}
+
 
 }

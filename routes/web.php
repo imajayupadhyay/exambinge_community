@@ -9,17 +9,32 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\MyFeedController;
+use App\Http\Controllers\FollowController;
+use App\Http\Controllers\LeftSidebarController;
 
 /*
 |--------------------------------------------------------------------------
 | Public Routes
 |--------------------------------------------------------------------------
 */
+// Follow System Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Toggle follow/unfollow
+    Route::post('/follow/toggle/{user}', [FollowController::class, 'toggle'])->name('follow.toggle');
 
+    // View followers and followings
+    Route::get('/users/{user}/followers', [FollowController::class, 'followers'])->name('user.followers');
+    Route::get('/users/{user}/followings', [FollowController::class, 'followings'])->name('user.followings');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/followers', [FollowController::class, 'listFollowersPage'])->name('followers.page');
+});
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/myfeeds', [MyFeedController::class, 'index'])->name('myfeeds.index');
+     Route::post('/follow/toggle/{user}', [FollowController::class, 'toggle'])->name('follow.toggle');
     Route::post('/myfeeds', [MyFeedController::class, 'store'])->name('myfeeds.store');
     Route::patch('/myfeeds/{tweet}', [MyFeedController::class, 'update'])->name('myfeeds.update');
     Route::delete('/myfeeds/{tweet}', [MyFeedController::class, 'destroy'])->name('myfeeds.destroy');
@@ -85,6 +100,11 @@ Route::post('/tweets/{tweet}/retweet', [TweetController::class, 'retweet'])->nam
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/left-sidebar-data', [LeftSidebarController::class, 'fetch'])->name('leftsidebar.fetch');
+
+
+
 });
 
 /*
