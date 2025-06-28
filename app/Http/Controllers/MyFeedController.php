@@ -10,24 +10,42 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class MyFeedController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
      * Display a listing of the authenticated user's tweets.
      */
-    use AuthorizesRequests;
     public function index()
     {
-        $tweets = Tweet::with(['user', 'likes', 'replies', 'retweets']) // ✅ ensure 'user' is loaded
+        $tweets = Tweet::with(['user', 'likes', 'replies', 'retweets'])
             ->where('user_id', Auth::id())
             ->latest()
             ->paginate(10);
 
-        return Inertia::render('MyFeeds/Index', [
-    'tweets' => $tweets,
-    'auth' => [
-        'user' => Auth::user(), // ✅ must wrap inside 'user'
-    ],
-]);
+        // Add image and avatar URL to the output
+        $tweets->getCollection()->transform(function ($tweet) {
+            return [
+                'id' => $tweet->id,
+                'content' => $tweet->content,
+                'image' => $tweet->image ? asset('storage/' . $tweet->image) : null,
+                'created_at' => $tweet->created_at,
+                'user' => [
+                    'id' => $tweet->user->id,
+                    'name' => $tweet->user->name,
+                    'avatar' => $tweet->user->profile_photo_path
+                        ? asset('storage/' . $tweet->user->profile_photo_path)
+                        : '/images/default-avatar.png',
+                ],
+                // Optionally include likes/replies/retweets
+            ];
+        });
 
+        return Inertia::render('MyFeeds/Index', [
+            'tweets' => $tweets,
+            'auth' => [
+                'user' => Auth::user(),
+            ],
+        ]);
     }
 
     /**
@@ -36,12 +54,19 @@ class MyFeedController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'content' => 'required|string|max:280',
+            'content' => 'required|string|max:10000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
         ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('tweets', 'public');
+        }
 
         Tweet::create([
             'user_id' => Auth::id(),
             'content' => $request->content,
+            'image' => $imagePath,
         ]);
 
         return redirect()->route('myfeeds.index')->with('success', 'Tweet created successfully.');
@@ -52,14 +77,22 @@ class MyFeedController extends Controller
      */
     public function update(Request $request, Tweet $tweet)
     {
-        $this->authorize('update', $tweet); // uses Laravel Policy
+        $this->authorize('update', $tweet);
 
         $request->validate([
-            'content' => 'required|string|max:280',
+            'content' => 'required|string|max:10000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
         ]);
+
+        $imagePath = $tweet->image;
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('tweets', 'public');
+        }
 
         $tweet->update([
             'content' => $request->content,
+            'image' => $imagePath,
         ]);
 
         return redirect()->route('myfeeds.index')->with('success', 'Tweet updated successfully.');
@@ -70,7 +103,7 @@ class MyFeedController extends Controller
      */
     public function destroy(Tweet $tweet)
     {
-        $this->authorize('delete', $tweet); // uses Laravel Policy
+        $this->authorize('delete', $tweet);
 
         $tweet->delete();
 

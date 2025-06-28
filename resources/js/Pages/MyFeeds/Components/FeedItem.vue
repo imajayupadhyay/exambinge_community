@@ -36,7 +36,13 @@
     </div>
 
     <!-- Tweet Content -->
-    <p class="mt-3 text-gray-700 text-sm leading-relaxed">{{ tweet.content }}</p>
+
+    <div class="mt-3 text-gray-700 text-sm leading-relaxed" v-html="tweet.content"></div>
+    <div v-if="tweet.image" class="mt-3">
+  <img :src="tweet.image" class="max-h-72 rounded-xl border shadow" />
+</div>
+
+
 
     <!-- Edit Modal -->
     <EditModal v-if="openEditModal" :tweet="tweet" @close="openEditModal = false" @updated="onUpdated" />
