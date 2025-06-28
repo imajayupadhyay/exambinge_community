@@ -20,7 +20,16 @@
           class="mt-1"
         />
       </div>
-
+<!-- Add after exam_tags selector -->
+<div class="mt-4">
+  <label class="block text-sm text-gray-700 mb-1">Attach Image:</label>
+  <input
+    type="file"
+    accept="image/*"
+    @change="handleFileUpload"
+    class="block w-full text-sm border rounded-md p-2"
+  />
+</div>
       <div class="text-right mt-6">
         <button
           type="submit"
@@ -52,32 +61,39 @@ const form = useForm({
   content: '',
   exam_tags: [],
 })
+const imageFile = ref(null)
+
+const handleFileUpload = (e) => {
+  imageFile.value = e.target.files[0]
+}
 
 const showProgress = ref(false)
 
 const submitTweet = async () => {
   try {
     showProgress.value = true
-    const response = await axios.post(route('tweets.store'), {
-      content: form.content,
-      exam_tags: form.exam_tags,
+    const formData = new FormData()
+    formData.append('content', form.content)
+    form.exam_tags.forEach(tag => formData.append('exam_tags[]', tag))
+    if (imageFile.value) formData.append('image', imageFile.value)
+
+    const response = await axios.post(route('tweets.store'), formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
 
     form.reset()
+    imageFile.value = null
 
     if (response.data.tweet) {
       emit('tweet-posted', response.data.tweet)
-
-      // simulate delay then reload page
-      setTimeout(() => {
-        window.location.reload()
-      }, 1500) // 1.5 seconds after progress bar shows
+      setTimeout(() => window.location.reload(), 1500)
     }
   } catch (error) {
     console.error('Tweet post failed:', error)
     showProgress.value = false
   }
 }
+
 </script>
 
 <style scoped>

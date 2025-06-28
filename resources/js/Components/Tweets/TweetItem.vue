@@ -20,20 +20,28 @@
 
       <!-- Follow Button -->
       <FollowButton
-  v-if="tweet.user.id !== currentUser?.id"
-  :user-id="tweet.user.id"
-  :initial-is-following="tweet.user.is_followed"
-/>
-
+        v-if="tweet.user.id !== currentUser?.id"
+        :user-id="tweet.user.id"
+        :initial-is-following="tweet.user.is_followed"
+      />
     </div>
 
     <!-- CONTENT -->
-    <div class="text-gray-800 whitespace-pre-wrap text-base leading-relaxed">
+    <div class="text-gray-800 whitespace-pre-wrap text-base leading-relaxed mb-3">
       {{ tweet.content }}
     </div>
 
+    <!-- IMAGE -->
+    <div v-if="localTweet.image" class="mb-3">
+  <img
+    :src="localTweet.image"
+    alt="Tweet Image"
+    class="rounded-lg max-h-96 w-full object-cover border"
+  />
+</div>
+
     <!-- EXAM TAGS -->
-    <div v-if="tweet.exam_tag" class="mt-3 flex flex-wrap gap-2">
+    <div v-if="tweet.exam_tag" class="mt-2 flex flex-wrap gap-2">
       <span
         v-for="tag in tweet.exam_tag.split(',')"
         :key="tag"
@@ -79,11 +87,7 @@
 
     <!-- REPLIES -->
     <div v-if="tweet.replies?.length" class="mt-4 border-t pt-4 space-y-3">
-      <div
-        v-for="reply in tweet.replies"
-        :key="reply.id"
-        class="text-sm text-gray-700"
-      >
+      <div v-for="reply in tweet.replies" :key="reply.id" class="text-sm text-gray-700">
         <strong>{{ reply.user.name }}:</strong> {{ reply.content }}
       </div>
     </div>
